@@ -131,3 +131,119 @@ Notice that as `rdx:rax` is the dividend, both registers must have the appropria
 So, whenever working with 64-bit integers, all bits in the `rdx` register must be cleared for a non-negative number in `rax`, and set for a negative number. This is called sign extension.
 
 Failing to perform sign extension can cause a wrong result for the division or, if the quotient is too large to fit in `rax`, an error.
+
+## Conditionals
+
+There's a special register called `rflags`. Its bits act like flags for various conditions. Some of them are listed below:
+
+| name     | symbol | bit |
+|----------|--------|-----|
+| carry    | CF     | 0   |
+| zero     | ZF     | 6   |
+| sign     | SF     | 7   |
+| overflow | OF     | 11  |
+
+These flags are not modified directly but are set by many different instructions.
+
+One of the most common instruction used to test condition is `cmp`. It takes two operands and update the flags, but do not modify its operands.
+
+### CMP instruction
+
+```nasm
+cmp A, B
+```
+
+The `cmp` instruction subtracts the second operand from the first and sets flags according to the result.
+
+| flag | set when                       |
+|------|--------------------------------|
+| CF   | A < B (unsigned)               |
+| ZF   | A == B                         |
+| SF   | A < B (signed)                 |
+| OF   | overflow in signed subtraction |
+
+### Branching
+
+#### Unconditional Jump
+
+```nasm
+jmp <label>
+```
+
+`jmp` instruction transfers execution of the program to another point of the code.
+
+#### Conditional Jump
+
+The family of instructions `jcc` transfers execution of the program to another point only if a specific condition is met. Otherwise, execution continues sequentially.
+
+Each condition maps to one or more flags in `rflags`. The `cc` in `jcc` refers to the specific suffix associated with the flag tested.
+
+Some of the suffixes refer directly to a flag:
+
+| suffix | jumps if |
+|--------|----------|
+| z      | ZF == 1  |
+| c      | CF == 1  |
+| s      | SF == 1  |
+| o      | OF == 1  |
+
+Many others are chosen in order to refer to their meaning in a `cmp` instruction:
+
+| instruction | suffix | jumps if         |
+|-------------|--------|------------------|
+| cmp A, B    | e      | A == B           |
+| cmp A, B    | l      | A < B (signed)   |
+| cmp A, B    | b      | A < B (unsigned) |
+| cmp A, B    | g      | A > B (signed)   |
+| cmp A, B    | a      | A > B (unsigned) |
+
+Note that some suffixes are aliases to the same conditions: `jz` and `je` both jump when `ZF` is set.
+
+It's possible to add `e` after `l`, `b`, `g` or `a` to include the equality in the condition:
+```nasm
+cmp rcx, r8
+jge two      ; this jumps to 'two' if rcx is greater than, or equal to, r8 in a signed comparison
+jbe two      ; this jumps to 'two' if rcx is lesser than, or equal to, r8 in an unsigned comparison
+```
+
+For all suffixes, there are variants which check the opposite behavior. They have the same syntax, but with a `n` before the suffix.
+
+For instance, `jnz` jumps when `ZF` is not set. Similarly, `jnae` jumps when A is not >= B (A and B interpreted as unsigned integers).
+
+### Local Labels
+
+In order to mimic the behavior of a local label, NASM has a special notation for a label declared with a period (.) before it. This notation defines a label which implicitly includes the name of the previous non-dotted label:
+
+```nasm
+section .text
+fn1:
+    ...
+.example: ; this is fn1.example
+    ...
+    ret
+
+fn2:
+    ...
+.example: ; this is fn2.example
+    ...
+    ret
+```
+
+A jump that uses the part of the label starting at the dot will be made to the label inside the upper function. For example, .example behaves as if it was local to the function:
+
+```nasm
+section .text
+fn1:
+    ...
+.example:
+    ...
+    jmp .example ; this jumps to fn1.example
+
+fn2:
+    ...
+.example:
+    ...
+    jmp .example ; this jumps to fn2.example
+```
+
+Note that a non-dotted label inside a function in practice defines another function.
