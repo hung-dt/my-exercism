@@ -247,3 +247,77 @@ fn2:
 ```
 
 Note that a non-dotted label inside a function in practice defines another function.
+
+## Bit Manipulation
+
+### Single bit manipulation
+
+- Work on single bits in an operand.
+
+| Name   | Description                                                                    |
+|--------|--------------------------------------------------------------------------------|
+| `bt`   | copies the bit into `CF` without modifying any operand                         |
+| `bts`  | copies the bit into `CF` and sets it in the destination operand                |
+| `btr`  | copies the bit into `CF` and clears it in the destination operand              |
+| `btc`  | copies the bit into `CF` and complements (flips) it in the destination operand |
+
+### Bitwise operations
+
+- Are performed in all bits of an operand.
+- Most take two operands, perform a bitwise operation on both and store the result in the destination operand.
+
+| Name  | Description                        |
+|-------|------------------------------------|
+| `and` | 1 if both bits are 1               |
+| `or`  | 1 if at least one of the bits is 1 |
+| `xor` | 1 if the bits differ               |
+| `not` | 1 if bit was 0; 0 if bit was 1     |
+
+### TEST instruction
+
+- The `test` instruction makes a bitwise AND between both operands and sets flags according to the result.
+
+| flag   | set when             |
+|--------|----------------------|
+| `CF`   | always cleared       |
+| `ZF`   | A AND B == 0         |
+| `SF`   | A AND B < 0 (signed) |
+| `OF`   | always cleared       |
+
+### Shift operations
+
+- Move the bits in the destination operand by a number of positions specified by the second operand.
+- The second operand must be a constant number (an immediate) or the register `cl`
+
+| Name      | Description              |
+|-----------|--------------------------|
+| `shl/sal` | Shifts bits to the left  |
+| `shr/sar` | Shifts bits to the right |
+
+Both `shl` and `sal` perform the exact same operation.
+
+`shr` moves `0` bits to the left end, while `sar` moves `1` if the most significant was set and `0` otherwise. This means that `sar` preserves the sign in the shift of a signed integer.
+
+Bits are moved to CF and then discarded. Since each bit in an integer represents a power of 2, a shift to the left by n positions has the effect of multiplying the integer by $2^n$, a shift to the right has the effect of making a division by $2^n$.
+
+### Rotation operations
+
+The difference between a rotation and a shift is that a rotation does not discard or add any bits. Bits that would be discarded by a shift are instead moved to the opposite end. So, all bits remain, they all change places.
+
+| Name   | Description                                   |
+|--------|-----------------------------------------------|
+| `rol`  | Rotates bits to the left                      |
+| `ror`  | Rotates bits to the right                     |
+| `rcl`  | Rotates bits to the left, including the `CF`  |
+| `rcr`  | Rotates bits to the right, including the `CF` |
+
+### Other bit manipulation instructions
+
+| Name     | Description                                                                            |
+|----------|----------------------------------------------------------------------------------------|
+| `popcnt` | Counts the number of bits set                                                          |
+| `lzcnt`  | Counts the number of leading zeros (a bit cleared before the first set bit)            |
+| `bsr`    | Gets the index of the most significant set bit. If no bit is set, result is undefined  |
+| `bsf`    | Gets the index of the least significant set bit. If no bit is set, result is undefined |
+
+These instructions all work with two 16-bit, 32-bit or 64-bit operands. They can not be used with 8-bit operands.
